@@ -1,5 +1,5 @@
 [workspace]
-members = ["contracts/cinema-seat-booking"]
+members = ["contracts/cinema_booking"]
 resolver = "2"
 
 [profile.release]

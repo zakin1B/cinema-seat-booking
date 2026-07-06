@@ -1,175 +1,244 @@
+import * as StellarSdk from "@stellar/stellar-sdk";
+
 import {
-  Address,
-  BASE_FEE,
-  Contract,
-  nativeToScVal,
-  Networks,
-  scValToNative,
-  TransactionBuilder,
-  xdr
-} from "@stellar/stellar-sdk";
+  CONTRACT_CONFIG,
+  getContractExplorerUrl,
+  getTransactionExplorerUrl,
+  hasDeployedContract
+} from "../contractConfig";
+import { signWithFreighter } from "./wallet";
 
-import { rpc } from "@stellar/stellar-sdk";
+const SDK = StellarSdk as any;
 
-import { CONTRACT_ID, NETWORK_PASSPHRASE, RPC_URL } from "../contractConfig";
-import { signWithWallet } from "./wallet";
-
-export type TransactionState = {
-  status: "idle" | "pending" | "success" | "failed";
-  hash?: string;
-  message: string;
+export type BookSeatInput = {
+  user: string;
+  seatId: string;
 };
 
-export const CONTRACT_FUNCTIONS = [
-  "book_seat",
-  "is_booked",
-  "get_seat_owner",
-  "get_booking",
-  "get_total_booked",
-  "get_user_bookings",
-  "cancel_booking",
-  "check_in"
-];
+export type BookingActionInput = {
+  user: string;
+  bookingId: string;
+};
 
-const server = new rpc.Server(RPC_URL, {
-  allowHttp: RPC_URL.startsWith("http://")
-});
+export type SubmittedTransaction = {
+  hash: string;
+  status: string;
+  explorerUrl: string;
+};
 
-const contract = new Contract(CONTRACT_ID);
+export type RuntimeConfig = {
+  network: string;
+  rpcUrl: string;
+  contractId: string;
+  contractExplorerUrl: string;
+  hasDeployedContract: boolean;
+};
 
-function toAddressScVal(address: string): xdr.ScVal {
-  return new Address(address).toScVal();
-}
+const getServer = () => {
+  const ServerClass = SDK.SorobanRpc?.Server || SDK.rpc?.Server;
 
-function toU32ScVal(value: number): xdr.ScVal {
-  return nativeToScVal(value, { type: "u32" });
-}
-
-async function buildTransaction(sourceAddress: string, operation: xdr.Operation) {
-  const account = await server.getAccount(sourceAddress);
-
-  return new TransactionBuilder(account, {
-    fee: BASE_FEE,
-    networkPassphrase: NETWORK_PASSPHRASE
-  })
-    .addOperation(operation)
-    .setTimeout(30)
-    .build();
-}
-
-async function pollTransaction(hash: string): Promise<TransactionState> {
-  for (let attempt = 0; attempt < 12; attempt += 1) {
-    const tx = await server.getTransaction(hash);
-
-    if (tx.status === "SUCCESS") {
-      return {
-        status: "success",
-        hash,
-        message: "Transaction confirmed on Stellar testnet."
-      };
-    }
-
-    if (tx.status === "FAILED") {
-      return {
-        status: "failed",
-        hash,
-        message: "Transaction failed on Stellar testnet."
-      };
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 1200));
+  if (!ServerClass) {
+    throw new Error("Soroban RPC Server class was not found in @stellar/stellar-sdk.");
   }
 
-  return {
-    status: "pending",
-    hash,
-    message: "Transaction submitted and still pending."
-  };
-}
+  return new ServerClass(CONTRACT_CONFIG.rpcUrl, {
+    allowHttp: false
+  });
+};
 
-async function submitContractCall(
-  sourceAddress: string,
-  method: string,
-  args: xdr.ScVal[]
-): Promise<TransactionState> {
-  const operation = contract.call(method, ...args);
-  const transaction = await buildTransaction(sourceAddress, operation);
-  const prepared = await server.prepareTransaction(transaction);
+const getContract = () => {
+  return new SDK.Contract(CONTRACT_CONFIG.contractId);
+};
 
-  const signedXdr = await signWithWallet(prepared.toXDR(), sourceAddress);
-  const signedTransaction = TransactionBuilder.fromXDR(
+const buildAddressScVal = (address: string) => {
+  return new SDK.Address(address).toScVal();
+};
+
+const buildU32ScVal = (value: string | number) => {
+  return SDK.nativeToScVal(Number(value || 0), { type: "u32" });
+};
+
+const buildTransaction = async (sourcePublicKey: string, operation: unknown) => {
+  const server = getServer();
+  const sourceAccount = await server.getAccount(sourcePublicKey);
+
+  const transaction = new SDK.TransactionBuilder(sourceAccount, {
+    fee: SDK.BASE_FEE,
+    networkPassphrase: CONTRACT_CONFIG.networkPassphrase
+  })
+    .addOperation(operation)
+    .setTimeout(60)
+    .build();
+
+  return server.prepareTransaction(transaction);
+};
+
+const submitSignedTransaction = async (
+  signedXdr: string
+): Promise<SubmittedTransaction> => {
+  const server = getServer();
+  const signedTransaction = new SDK.Transaction(
     signedXdr,
-    Networks.TESTNET
+    CONTRACT_CONFIG.networkPassphrase
   );
 
   const sendResult = await server.sendTransaction(signedTransaction);
 
-  if (sendResult.status === "ERROR") {
-    return {
-      status: "failed",
-      hash: sendResult.hash,
-      message: "RPC rejected the signed transaction."
-    };
+  if (!sendResult.hash) {
+    throw new Error(
+      sendResult.errorResultXdr || "Transaction was rejected by Soroban RPC."
+    );
   }
 
-  return pollTransaction(sendResult.hash);
-}
+  return {
+    hash: sendResult.hash,
+    status: sendResult.status || "PENDING",
+    explorerUrl: getTransactionExplorerUrl(sendResult.hash)
+  };
+};
 
-async function simulateContractCall<T>(
-  sourceAddress: string,
+const invokeContract = async (
+  sourcePublicKey: string,
   method: string,
-  args: xdr.ScVal[]
-): Promise<T> {
+  args: unknown[]
+): Promise<SubmittedTransaction> => {
+  const contract = getContract();
   const operation = contract.call(method, ...args);
-  const transaction = await buildTransaction(sourceAddress, operation);
+  const preparedTransaction = await buildTransaction(sourcePublicKey, operation);
+  const signedXdr = await signWithFreighter(
+    preparedTransaction.toXDR(),
+    sourcePublicKey
+  );
+
+  return submitSignedTransaction(signedXdr);
+};
+
+const simulateContract = async (
+  sourcePublicKey: string,
+  method: string,
+  args: unknown[]
+) => {
+  const server = getServer();
+  const contract = getContract();
+  const operation = contract.call(method, ...args);
+  const sourceAccount = await server.getAccount(sourcePublicKey);
+
+  const transaction = new SDK.TransactionBuilder(sourceAccount, {
+    fee: SDK.BASE_FEE,
+    networkPassphrase: CONTRACT_CONFIG.networkPassphrase
+  })
+    .addOperation(operation)
+    .setTimeout(60)
+    .build();
+
   const simulation = await server.simulateTransaction(transaction);
 
-  const result = (simulation as any).result?.retval;
-
-  if (!result) {
-    throw new Error(`No simulation result returned for ${method}.`);
+  if (simulation.error) {
+    throw new Error(simulation.error);
   }
 
-  return scValToNative(result) as T;
-}
+  return simulation.result?.retval;
+};
 
-export async function bookSeat(
-  sourceAddress: string,
-  seatId: number
-): Promise<TransactionState> {
-  return submitContractCall(sourceAddress, "book_seat", [
-    toAddressScVal(sourceAddress),
-    toU32ScVal(seatId)
+export const getRuntimeConfig = (): RuntimeConfig => {
+  return {
+    network: CONTRACT_CONFIG.network,
+    rpcUrl: CONTRACT_CONFIG.rpcUrl,
+    contractId: CONTRACT_CONFIG.contractId,
+    contractExplorerUrl: getContractExplorerUrl(),
+    hasDeployedContract
+  };
+};
+
+export const shortenAddress = (value: string, prefix = 8, suffix = 8) => {
+  if (!value) {
+    return "Not available";
+  }
+
+  if (value.length <= prefix + suffix + 3) {
+    return value;
+  }
+
+  return `${value.slice(0, prefix)}...${value.slice(-suffix)}`;
+};
+
+export const bookSeat = async (
+  input: BookSeatInput
+): Promise<SubmittedTransaction> => {
+  return invokeContract(input.user, "book_seat", [
+    buildAddressScVal(input.user),
+    buildU32ScVal(input.seatId)
   ]);
-}
+};
 
-export async function isBooked(
-  sourceAddress: string,
-  seatId: number
-): Promise<boolean> {
-  return simulateContractCall<boolean>(sourceAddress, "is_booked", [
-    toU32ScVal(seatId)
+export const cancelBooking = async (
+  input: BookingActionInput
+): Promise<SubmittedTransaction> => {
+  return invokeContract(input.user, "cancel_booking", [
+    buildAddressScVal(input.user),
+    buildU32ScVal(input.bookingId)
   ]);
-}
+};
 
-export async function getSeatOwner(
-  sourceAddress: string,
-  seatId: number
-): Promise<string | null> {
-  return simulateContractCall<string | null>(sourceAddress, "get_seat_owner", [
-    toU32ScVal(seatId)
+export const checkIn = async (
+  input: BookingActionInput
+): Promise<SubmittedTransaction> => {
+  return invokeContract(input.user, "check_in", [
+    buildAddressScVal(input.user),
+    buildU32ScVal(input.bookingId)
   ]);
-}
+};
 
-export async function getBooking(
-  sourceAddress: string,
-  seatId: number
-): Promise<unknown> {
-  return simulateContractCall<unknown>(sourceAddress, "get_booking", [
-    toU32ScVal(seatId)
+export const isBooked = async (
+  sourcePublicKey: string,
+  seatId: string
+): Promise<boolean | null> => {
+  const result = await simulateContract(sourcePublicKey, "is_booked", [
+    buildU32ScVal(seatId)
   ]);
-}
 
-export async function getTotalBooked(sourceAddress: string): Promise<number> {
-  return simulateContractCall<number>(sourceAddress, "get_total_booked", []);
-}
+  return result ? SDK.scValToNative(result) : null;
+};
+
+export const getSeatOwner = async (
+  sourcePublicKey: string,
+  seatId: string
+): Promise<string | null> => {
+  const result = await simulateContract(sourcePublicKey, "get_seat_owner", [
+    buildU32ScVal(seatId)
+  ]);
+
+  return result ? SDK.scValToNative(result) : null;
+};
+
+export const getBooking = async (
+  sourcePublicKey: string,
+  bookingId: string
+): Promise<unknown> => {
+  const result = await simulateContract(sourcePublicKey, "get_booking", [
+    buildU32ScVal(bookingId)
+  ]);
+
+  return result ? SDK.scValToNative(result) : null;
+};
+
+export const getStats = async (sourcePublicKey: string): Promise<unknown> => {
+  const result = await simulateContract(sourcePublicKey, "stats", []);
+
+  return result ? SDK.scValToNative(result) : null;
+};
+
+export const getContractMethods = () => [
+  "initialize",
+  "admin",
+  "book_seat",
+  "cancel_booking",
+  "check_in",
+  "is_booked",
+  "seat_booking_id",
+  "get_seat_owner",
+  "get_booking",
+  "get_total_booked",
+  "get_user_bookings",
+  "stats"
+];

@@ -1,13 +1,18 @@
-export const NETWORK = "testnet";
+export const CONTRACT_CONFIG = {
+  network: "testnet",
+  networkPassphrase: "Test SDF Network ; September 2015",
+  rpcUrl: "https://soroban-testnet.stellar.org",
+  explorerBaseUrl: "https://stellar.expert/explorer/testnet",
+  contractId: "CCNXI62IYT6H2CWOWAOH2DQJ3DOUWM5FRQWB5E6EAS4HNSZ3WOQNUTZ5",
+  deployedAt: "Stellar Testnet",
+};
 
-export const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+export const hasDeployedContract =
+  CONTRACT_CONFIG.contractId.startsWith("C") &&
+  CONTRACT_CONFIG.contractId.length > 20;
 
-export const RPC_URL = "https://soroban-testnet.stellar.org";
+export const getContractExplorerUrl = () =>
+  CONTRACT_CONFIG.explorerBaseUrl + "/contract/" + CONTRACT_CONFIG.contractId;
 
-export const CONTRACT_ID =
-  "CB67IGMBGF6BEWRS5CZKIVXH7DQC4CYQLH5SRLZMLTMCYK3EOYW2UUAS";
-
-export const EXPLORER_CONTRACT_URL = `https://stellar.expert/explorer/testnet/contract/${CONTRACT_ID}`;
-
-export const explorerTxUrl = (hash: string) =>
-  `https://stellar.expert/explorer/testnet/tx/${hash}`;
+export const getTransactionExplorerUrl = (hash: string) =>
+  CONTRACT_CONFIG.explorerBaseUrl + "/tx/" + hash;

@@ -12,5 +12,11 @@ version-check.txt
 contracts/**/test_snapshots/
 frontend/node_modules/
 frontend/dist/
+*-stdout.txt
+*-stderr.txt
+invoke-output.txt
+deploy-output.txt
+deploy-fresh-output.txt
+auto-upgrade-level3.log
 .DS_Store
 *.bak

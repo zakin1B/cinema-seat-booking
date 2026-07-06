@@ -2,276 +2,275 @@ import { useMemo, useState } from "react";
 
 import {
   bookSeat,
+  cancelBooking,
+  checkIn,
   getBooking,
+  getRuntimeConfig,
   getSeatOwner,
-  getTotalBooked,
+  getStats,
   isBooked,
-  TransactionState
+  shortenAddress,
+  SubmittedTransaction
 } from "./services/contract";
+import { connectFreighter } from "./services/wallet";
 
-import { connectWallet } from "./services/wallet";
+import "./App.css";
 
-import {
-  CONTRACT_ID,
-  EXPLORER_CONTRACT_URL,
-  explorerTxUrl,
-  NETWORK
-} from "./contractConfig";
-
-import "./styles.css";
-
-type SeatView = {
-  seatId: number;
-  booked: boolean | null;
+type SeatStatus = {
+  seatId: string;
+  isBooked: boolean | null;
   owner: string | null;
-  booking: unknown;
 };
 
-const DEFAULT_TX: TransactionState = {
-  status: "idle",
-  message: "No transaction submitted yet."
-};
-
-function shortAddress(address: string) {
-  if (!address) return "";
-  return `${address.slice(0, 6)}...${address.slice(-6)}`;
-}
+const runtimeConfig = getRuntimeConfig();
 
 export default function App() {
-  const [address, setAddress] = useState("");
-  const [seatId, setSeatId] = useState(12);
-  const [txState, setTxState] = useState<TransactionState>(DEFAULT_TX);
-  const [seatView, setSeatView] = useState<SeatView>({
-    seatId: 12,
-    booked: null,
-    owner: null,
-    booking: null
+  const [walletAddress, setWalletAddress] = useState("");
+  const [seatId, setSeatId] = useState("12");
+  const [bookingId, setBookingId] = useState("1");
+  const [seatStatus, setSeatStatus] = useState<SeatStatus>({
+    seatId: "12",
+    isBooked: null,
+    owner: null
   });
+  const [bookingDetails, setBookingDetails] = useState<unknown>(null);
+  const [stats, setStats] = useState<unknown>(null);
+  const [transaction, setTransaction] = useState<SubmittedTransaction | null>(
+    null
+  );
+  const [message, setMessage] = useState("Ready to connect wallet.");
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
   const walletLabel = useMemo(() => {
-    return address ? shortAddress(address) : "Wallet not connected";
-  }, [address]);
+    if (!walletAddress) {
+      return "Connect Freighter";
+    }
 
-  async function handleConnect() {
-    setErrorMessage("");
+    return shortenAddress(walletAddress);
+  }, [walletAddress]);
+
+  const requireWallet = () => {
+    if (!walletAddress) {
+      throw new Error("Connect Freighter wallet first.");
+    }
+
+    return walletAddress;
+  };
+
+  const runAction = async (
+    actionName: string,
+    action: () => Promise<SubmittedTransaction | void>
+  ) => {
     setLoading(true);
+    setMessage(`${actionName} is running...`);
 
     try {
-      const walletAddress = await connectWallet();
-      setAddress(walletAddress);
+      const result = await action();
+
+      if (result) {
+        setTransaction(result);
+        setMessage(`${actionName} submitted successfully.`);
+      } else {
+        setMessage(`${actionName} completed.`);
+      }
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to connect wallet."
-      );
+      setMessage(error instanceof Error ? error.message : `${actionName} failed.`);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  async function handleBookSeat() {
-    if (!address) {
-      setErrorMessage("Connect Freighter wallet before booking a seat.");
-      return;
-    }
-
-    setErrorMessage("");
-    setLoading(true);
-    setTxState({
-      status: "pending",
-      message: "Waiting for wallet signature and Stellar confirmation."
+  const handleConnect = async () => {
+    await runAction("Wallet connection", async () => {
+      const address = await connectFreighter();
+      setWalletAddress(address);
     });
+  };
 
-    try {
-      const result = await bookSeat(address, seatId);
-      setTxState(result);
-      await handleCheckSeat();
-    } catch (error) {
-      setTxState({
-        status: "failed",
-        message:
-          error instanceof Error ? error.message : "Seat booking transaction failed."
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+  const handleBookSeat = async () => {
+    await runAction("Seat booking", async () => {
+      const user = requireWallet();
+      return bookSeat({ user, seatId });
+    });
+  };
 
-  async function handleCheckSeat() {
-    if (!address) {
-      setErrorMessage("Connect wallet first so the app can simulate contract reads.");
-      return;
-    }
+  const handleCancelBooking = async () => {
+    await runAction("Booking cancellation", async () => {
+      const user = requireWallet();
+      return cancelBooking({ user, bookingId });
+    });
+  };
 
-    setErrorMessage("");
-    setLoading(true);
+  const handleCheckIn = async () => {
+    await runAction("Check-in", async () => {
+      const user = requireWallet();
+      return checkIn({ user, bookingId });
+    });
+  };
 
-    try {
-      const booked = await isBooked(address, seatId);
-      const owner = await getSeatOwner(address, seatId).catch(() => null);
-      const booking = await getBooking(address, seatId).catch(() => null);
+  const handleReadSeat = async () => {
+    await runAction("Seat status check", async () => {
+      const user = requireWallet();
+      const booked = await isBooked(user, seatId);
+      const owner = await getSeatOwner(user, seatId).catch(() => null);
 
-      setSeatView({
+      setSeatStatus({
         seatId,
-        booked,
-        owner,
-        booking
+        isBooked: booked,
+        owner
       });
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to read seat status."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+    });
+  };
 
-  async function handleLoadStats() {
-    if (!address) {
-      setErrorMessage("Connect wallet first to load contract stats.");
-      return;
-    }
+  const handleReadBooking = async () => {
+    await runAction("Booking read", async () => {
+      const user = requireWallet();
+      const booking = await getBooking(user, bookingId);
+      setBookingDetails(booking);
+    });
+  };
 
-    setErrorMessage("");
-    setLoading(true);
-
-    try {
-      const total = await getTotalBooked(address);
-      setTxState({
-        status: "success",
-        message: `Contract currently reports ${total} active booked seat(s).`
-      });
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to load contract stats."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const handleReadStats = async () => {
+    await runAction("Stats read", async () => {
+      const user = requireWallet();
+      const nextStats = await getStats(user);
+      setStats(nextStats);
+    });
+  };
 
   return (
-    <main className="page">
+    <main className="page-shell">
       <nav className="topbar">
         <div>
-          <p className="eyebrow">Stellar Testnet dApp</p>
+          <p className="eyebrow">Stellar Testnet Level 3 dApp</p>
           <h1>Cinema Seat Booking</h1>
         </div>
 
-        <button className="wallet-button" onClick={handleConnect} disabled={loading}>
-          {address ? walletLabel : "Connect Freighter"}
+        <button onClick={handleConnect} disabled={loading}>
+          {walletLabel}
         </button>
       </nav>
 
       <section className="hero">
         <div>
           <p className="eyebrow">Transparent on-chain reservations</p>
-          <h2>Book cinema seats through a Soroban smart contract.</h2>
+          <h2>Book cinema seats through Soroban and Freighter.</h2>
           <p>
-            Users connect a Stellar wallet, choose a seat, sign a transaction,
-            and verify booking ownership directly from contract storage.
+            This dashboard connects a Stellar wallet, writes booking transactions,
+            reads contract state, and displays transaction links for verification.
           </p>
         </div>
 
         <div className="contract-card">
           <span>Network</span>
-          <strong>{NETWORK}</strong>
+          <strong>{runtimeConfig.network}</strong>
 
-          <span>Contract ID</span>
-          <a href={EXPLORER_CONTRACT_URL} target="_blank" rel="noreferrer">
-            {shortAddress(CONTRACT_ID)}
+          <span>Contract</span>
+          <a href={runtimeConfig.contractExplorerUrl} target="_blank" rel="noreferrer">
+            {shortenAddress(runtimeConfig.contractId)}
           </a>
         </div>
       </section>
 
       <section className="grid">
         <div className="panel">
-          <h3>Seat action workspace</h3>
-          <p className="muted">
-            The frontend calls the exact contract functions: book_seat, is_booked,
-            get_seat_owner, and get_booking.
-          </p>
+          <h3>Booking Actions</h3>
 
-          <label htmlFor="seatId">Seat ID</label>
+          <label htmlFor="seat">Seat ID</label>
           <input
-            id="seatId"
-            type="number"
-            min="1"
+            id="seat"
             value={seatId}
-            onChange={(event) => setSeatId(Number(event.target.value))}
+            onChange={(event) => setSeatId(event.target.value)}
           />
 
-          <div className="button-row">
+          <label htmlFor="booking">Booking ID</label>
+          <input
+            id="booking"
+            value={bookingId}
+            onChange={(event) => setBookingId(event.target.value)}
+          />
+
+          <div className="button-grid">
             <button onClick={handleBookSeat} disabled={loading}>
               Book seat
             </button>
 
-            <button className="secondary" onClick={handleCheckSeat} disabled={loading}>
-              Check seat
+            <button onClick={handleCancelBooking} disabled={loading}>
+              Cancel booking
             </button>
 
-            <button className="secondary" onClick={handleLoadStats} disabled={loading}>
-              Load stats
+            <button onClick={handleCheckIn} disabled={loading}>
+              Check in
             </button>
           </div>
         </div>
 
         <div className="panel">
-          <h3>Seat status</h3>
+          <h3>Read Contract State</h3>
+
+          <div className="button-grid">
+            <button onClick={handleReadSeat} disabled={loading}>
+              Check seat
+            </button>
+
+            <button onClick={handleReadBooking} disabled={loading}>
+              Load booking
+            </button>
+
+            <button onClick={handleReadStats} disabled={loading}>
+              Load stats
+            </button>
+          </div>
 
           <div className="metric">
-            <span>Selected seat</span>
-            <strong>{seatView.seatId}</strong>
+            <span>Seat</span>
+            <strong>{seatStatus.seatId}</strong>
           </div>
 
           <div className="metric">
             <span>Booked</span>
             <strong>
-              {seatView.booked === null ? "Not checked" : seatView.booked ? "Yes" : "No"}
+              {seatStatus.isBooked === null
+                ? "Not checked"
+                : seatStatus.isBooked
+                  ? "Yes"
+                  : "No"}
             </strong>
           </div>
 
           <div className="metric">
             <span>Owner</span>
-            <strong>{seatView.owner ? shortAddress(seatView.owner) : "None"}</strong>
+            <strong>{seatStatus.owner ? shortenAddress(seatStatus.owner) : "None"}</strong>
           </div>
         </div>
 
         <div className="panel">
-          <h3>Transaction monitor</h3>
+          <h3>Transaction Monitor</h3>
 
-          <div className={`status ${txState.status}`}>
-            <strong>{txState.status.toUpperCase()}</strong>
-            <p>{txState.message}</p>
+          <p>{message}</p>
 
-            {txState.hash ? (
-              <a href={explorerTxUrl(txState.hash)} target="_blank" rel="noreferrer">
+          {transaction ? (
+            <div className="transaction-box">
+              <span>{transaction.status}</span>
+              <a href={transaction.explorerUrl} target="_blank" rel="noreferrer">
                 View transaction
               </a>
-            ) : null}
-          </div>
+              <code>{transaction.hash}</code>
+            </div>
+          ) : (
+            <p className="muted">No transaction submitted in this session yet.</p>
+          )}
         </div>
 
         <div className="panel">
-          <h3>Error and loading states</h3>
+          <h3>Runtime Data</h3>
 
-          {loading ? <p className="loading">Processing request...</p> : null}
+          <p className="muted">Booking details</p>
+          <pre>{JSON.stringify(bookingDetails, null, 2)}</pre>
 
-          {errorMessage ? (
-            <div className="error-box">{errorMessage}</div>
-          ) : (
-            <p className="muted">
-              Wallet errors, rejected signatures, failed RPC calls, and contract
-              read failures are surfaced here.
-            </p>
-          )}
+          <p className="muted">Stats</p>
+          <pre>{JSON.stringify(stats, null, 2)}</pre>
         </div>
-      </section>
-
-      <section className="activity">
-        <h3>Contract read preview</h3>
-        <pre>{JSON.stringify(seatView.booking, null, 2)}</pre>
       </section>
     </main>
   );

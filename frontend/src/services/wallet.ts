@@ -1,12 +1,8 @@
-import {
-  getAddress,
-  isConnected,
-  requestAccess,
-  setAllowed,
-  signTransaction
-} from "@stellar/freighter-api";
+import * as FreighterApi from "@stellar/freighter-api";
 
-import { NETWORK_PASSPHRASE } from "../contractConfig";
+import { CONTRACT_CONFIG } from "../contractConfig";
+
+const Freighter = FreighterApi as any;
 
 type FreighterAddressResult =
   | string
@@ -22,7 +18,7 @@ type FreighterSignResult =
       error?: string;
     };
 
-function normalizeAddress(result: FreighterAddressResult): string {
+const normalizeAddress = (result: FreighterAddressResult): string => {
   if (typeof result === "string") {
     return result;
   }
@@ -32,9 +28,9 @@ function normalizeAddress(result: FreighterAddressResult): string {
   }
 
   throw new Error(result?.error || "Unable to read Freighter address.");
-}
+};
 
-function normalizeSignedXdr(result: FreighterSignResult): string {
+const normalizeSignedXdr = (result: FreighterSignResult): string => {
   if (typeof result === "string") {
     return result;
   }
@@ -44,56 +40,34 @@ function normalizeSignedXdr(result: FreighterSignResult): string {
   }
 
   throw new Error(result?.error || "Freighter did not return a signed transaction.");
-}
+};
 
-export async function connectWallet(): Promise<string> {
-  const connected = await (isConnected as unknown as () => Promise<
-    boolean | { isConnected?: boolean }
-  >)();
-
-  if (typeof connected === "object" && connected.isConnected === false) {
-    throw new Error("Freighter wallet is not connected.");
-  }
-
-  await (setAllowed as unknown as () => Promise<void>)();
-
-  const accessResult = await (requestAccess as unknown as () => Promise<
-    FreighterAddressResult
-  >)();
+export const connectFreighter = async (): Promise<string> => {
+  const accessResult = await Freighter.requestAccess();
 
   if (accessResult) {
     return normalizeAddress(accessResult);
   }
 
-  const addressResult = await (getAddress as unknown as () => Promise<
-    FreighterAddressResult
-  >)();
+  const addressResult = await Freighter.getAddress();
 
   return normalizeAddress(addressResult);
-}
+};
 
-export async function getConnectedAddress(): Promise<string> {
-  const addressResult = await (getAddress as unknown as () => Promise<
-    FreighterAddressResult
-  >)();
+export const getConnectedAddress = async (): Promise<string> => {
+  const addressResult = await Freighter.getAddress();
 
   return normalizeAddress(addressResult);
-}
+};
 
-export async function signWithWallet(
+export const signWithFreighter = async (
   transactionXdr: string,
   address: string
-): Promise<string> {
-  const result = await (signTransaction as unknown as (
-    xdr: string,
-    opts: {
-      networkPassphrase: string;
-      address: string;
-    }
-  ) => Promise<FreighterSignResult>)(transactionXdr, {
-    networkPassphrase: NETWORK_PASSPHRASE,
+): Promise<string> => {
+  const result = await Freighter.signTransaction(transactionXdr, {
+    networkPassphrase: CONTRACT_CONFIG.networkPassphrase,
     address
   });
 
   return normalizeSignedXdr(result);
-}
+};

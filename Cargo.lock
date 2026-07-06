@@ -245,7 +245,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cinema-seat-booking"
+name = "cinema_booking"
 version = "0.1.0"
 dependencies = [
  "soroban-sdk",
