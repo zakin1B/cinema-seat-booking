@@ -1,102 +1,153 @@
 # Cinema Seat Booking on Stellar
 
+Cinema Seat Booking is a Stellar testnet dApp for transparent cinema seat reservations.
+
+The project demonstrates an end-to-end Soroban application with:
+
+- Smart contract storage
+- Wallet authentication
+- Contract events
+- Frontend contract reads and writes
+- Transaction status monitoring
+- Mobile responsive UI
+- CI workflow for contract and frontend validation
+
 ## Problem
 
-Traditional seat reservation systems can suffer from duplicate bookings and lack transparent verification of seat ownership.
+Traditional cinema booking systems can suffer from duplicate reservations and limited public verification of seat ownership.
 
 ## Solution
 
-Cinema Seat Booking is a Soroban smart contract on Stellar that allows users to reserve cinema seats securely with on-chain storage and wallet authentication.
+Cinema Seat Booking stores seat reservations on Stellar testnet through a Soroban smart contract.
+
+A user connects a wallet, selects a seat, signs a transaction, and can verify whether a seat is already booked.
 
 ## Why Stellar
 
-Stellar with Soroban enables fast, low-cost smart contracts with wallet authentication and event tracking for transparent seat booking.
+Stellar and Soroban are suitable for this project because they support fast and low-cost smart contract interactions with transparent on-chain state.
 
-## Target User
+## Contract Functions
 
-* Cinema customers who want secure seat reservations
-* Movie theaters managing booking records
-* Developers learning Soroban smart contracts on Stellar
-
-## Live Demo
-
-* Network: Stellar Testnet
-
-* Contract ID:
-  `CB67IGMBGF6BEWRS5CZKIVXH7DQC4CYQLH5SRLZMLTMCYK3EOYW2UUAS`
-
-* Sample Transaction:
-  https://stellar.expert/explorer/testnet/tx/459a3818d5470c4180832332d3037998078c8b2e8d15331d5a4384f7c3d5288d
-
-## Features
-
-* Book a cinema seat
-* Prevent duplicate seat booking
-* Wallet authentication using Soroban
-* Multi-wallet support
-* Persistent on-chain storage
-* Contract events for booking tracking
-
-## Smart Contract Flow
-
-1. User connects wallet
-2. User selects a seat ID
-3. Contract checks if seat already exists
-4. If available:
-
-   * Store wallet address
-   * Emit BOOKED event
-5. Return booking result
-
-## How to Run
-
-1. Clone repository
-
-```bash
-git clone https://github.com/yourname/cinema-seat-booking.git
+```text
+book_seat(user, seat_id)
+is_booked(seat_id)
+get_seat_owner(seat_id)
+get_booking(seat_id)
+get_total_booked()
+get_user_bookings(user)
+cancel_booking(user, seat_id)
+check_in(user, seat_id)
 ```
 
-2. Enter project
+## Project Structure
 
-```bash
-cd cinema-seat-booking
+```text
+cinema-seat-booking
+â”œâ”€â”€ contracts
+â”‚   â””â”€â”€ cinema-seat-booking
+â”‚       â”œâ”€â”€ Cargo.toml
+â”‚       â””â”€â”€ src
+â”‚           â”œâ”€â”€ lib.rs
+â”‚           â””â”€â”€ test.rs
+â”œâ”€â”€ frontend
+â”‚   â””â”€â”€ src
+â”‚       â”œâ”€â”€ App.tsx
+â”‚       â”œâ”€â”€ contractConfig.ts
+â”‚       â””â”€â”€ services
+â”‚           â”œâ”€â”€ contract.ts
+â”‚           â””â”€â”€ wallet.ts
+â”œâ”€â”€ scripts
+â”‚   â”œâ”€â”€ deploy-and-save.ps1
+â”‚   â””â”€â”€ verify-level3.ps1
+â”œâ”€â”€ docs
+â”‚   â””â”€â”€ ARCHITECTURE.md
+â”œâ”€â”€ .github
+â”‚   â””â”€â”€ workflows
+â”‚       â””â”€â”€ ci.yml
+â””â”€â”€ README.md
 ```
 
-3. Build contract
+## Current Testnet Contract
 
-```bash
-cargo build --target wasm32-unknown-unknown --release
+Network:
+
+```text
+Stellar Testnet
 ```
 
-4. Deploy contract
+Contract ID:
 
-```bash
-stellar contract deploy --wasm target/wasm32-unknown-unknown/release/cinema_booking.wasm --source alice --network testnet
+```text
+CB67IGMBGF6BEWRS5CZKIVXH7DQC4CYQLH5SRLZMLTMCYK3EOYW2UUAS
 ```
 
-5. Invoke booking
+Sample transaction:
+
+```text
+https://stellar.expert/explorer/testnet/tx/459a3818d5470c4180832332d3037998078c8b2e8d15331d5a4384f7c3d5288d
+```
+
+## Run Contract Tests
 
 ```bash
-stellar contract invoke \
---id CB67IGMBGF6BEWRS5CZKIVXH7DQC4CYQLH5SRLZMLTMCYK3EOYW2UUAS \
---source alice \
---network testnet \
---send=yes \
--- book_seat \
---user "$(stellar keys address alice)" \
---seat_id 1
+cargo test --workspace
 ```
+
+## Build Contract
+
+```bash
+rustup target add wasm32v1-none
+cargo build --workspace --target wasm32v1-none --release
+```
+
+## Run Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Verify Project Locally
+
+PowerShell:
+
+```powershell
+.\scripts\verify-level3.ps1
+```
+
+## Deploy Contract
+
+PowerShell:
+
+```powershell
+.\scripts\deploy-and-save.ps1 -SourceAccount deployer
+```
+
+The deploy script saves the new contract ID to:
+
+```text
+CONTRACT_ID.txt
+frontend/src/contractConfig.ts
+```
+
+## Frontend Flow
+
+1. User connects Freighter wallet.
+2. User selects a seat ID.
+3. Frontend calls `book_seat`.
+4. Freighter signs the prepared transaction.
+5. Frontend submits transaction to Stellar RPC.
+6. UI shows transaction status and hash.
+7. User can check seat status through `is_booked`, `get_seat_owner`, and `get_booking`.
 
 ## Tech Stack
 
-* Smart Contract: Rust
-* Framework: Soroban SDK v22
-* Blockchain: Stellar Testnet
-* Wallet: Stellar CLI identities (Alice / Bob)
-* Storage: Soroban persistent storage
-* Events: Soroban event system
-
-## Team
-
-* zakin
-* Email: [zakinsuong@gmail.com](mailto:your@email.com)
+- Stellar Testnet
+- Soroban SDK
+- Rust
+- React
+- Vite
+- TypeScript
+- Freighter wallet
+- GitHub Actions
