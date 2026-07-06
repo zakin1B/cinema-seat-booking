@@ -1,31 +1,16 @@
 # Cinema Seat Booking Deployment
 
 Network:
-
-``text
 Stellar Testnet
-``
 
 Contract ID:
-
-``text
-CCNXI62IYT6H2CWOWAOH2DQJ3DOUWM5FRQWB5E6EAS4HNSZ3WOQNUTZ5
-``
+CAPAJLC2WT435RDYVHB5M6UTM3YTOS3ZZ3RXDM4H7QW5TZ363UEZ5KN7
 
 Contract Explorer:
-
-``text
-https://stellar.expert/explorer/testnet/contract/CCNXI62IYT6H2CWOWAOH2DQJ3DOUWM5FRQWB5E6EAS4HNSZ3WOQNUTZ5
-``
+https://stellar.expert/explorer/testnet/contract/CAPAJLC2WT435RDYVHB5M6UTM3YTOS3ZZ3RXDM4H7QW5TZ363UEZ5KN7
 
 Successful Contract Interaction Transaction Hash:
-
-``text
-4233411cd3ee2e4cb751d8452427bc8ce7c98b5f5250f1c7cff5c1a2625b4100
-``
+d82889e5d8677e4c15742829fb115988a8fbfa31c0049de85e46db26e12ff8b6
 
 Successful Contract Interaction Explorer:
-
-``text
-https://stellar.expert/explorer/testnet/tx/4233411cd3ee2e4cb751d8452427bc8ce7c98b5f5250f1c7cff5c1a2625b4100
-``
+https://stellar.expert/explorer/testnet/tx/d82889e5d8677e4c15742829fb115988a8fbfa31c0049de85e46db26e12ff8b6

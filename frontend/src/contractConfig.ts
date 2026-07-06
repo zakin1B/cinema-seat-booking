@@ -3,7 +3,7 @@ export const CONTRACT_CONFIG = {
   networkPassphrase: "Test SDF Network ; September 2015",
   rpcUrl: "https://soroban-testnet.stellar.org",
   explorerBaseUrl: "https://stellar.expert/explorer/testnet",
-  contractId: "CCNXI62IYT6H2CWOWAOH2DQJ3DOUWM5FRQWB5E6EAS4HNSZ3WOQNUTZ5",
+  contractId: "CAPAJLC2WT435RDYVHB5M6UTM3YTOS3ZZ3RXDM4H7QW5TZ363UEZ5KN7",
   deployedAt: "Stellar Testnet",
 };
 
