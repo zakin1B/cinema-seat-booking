@@ -1,0 +1,26 @@
+{
+  "name": "cinema-seat-booking-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "type-check": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@stellar/freighter-api": "latest",
+    "@stellar/stellar-sdk": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}
