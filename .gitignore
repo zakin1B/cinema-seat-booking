@@ -19,4 +19,11 @@ deploy-output.txt
 deploy-fresh-output.txt
 auto-upgrade-level3.log
 .DS_Store
-*.bak
+*.bak# Local helper scripts and logs
+finish-cinema-seat-booking-level3-v*.ps1
+upgrade-cinema-seat-booking-level3-template.ps1
+finalize-level3-cinema-seat-booking.ps1
+setup-level3-cinema-seat-booking.ps1
+level3-*.log
+*-out.txt
+*-err.txt
