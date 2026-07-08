@@ -1,52 +1,30 @@
 # Cinema Seat Booking
 
-Cinema Seat Booking is a Stellar Testnet dApp for reserving cinema seats through a Soroban smart contract and a Freighter wallet.
+Cinema Seat Booking is a Stellar Testnet dApp for reserving cinema seats through a Soroban smart contract and a Freighter wallet dashboard.
 
-Cinema Seat Booking is built as a complete Level 3 Stellar dApp with a Rust workspace, Soroban smart contract, React/Vite frontend, Freighter wallet signing, Soroban RPC integration, deployment automation, verification script, frontend tests, and GitHub Actions CI.
+The project demonstrates a complete Stellar Level 3 dApp flow with smart contract logic, contract tests, deployment evidence, frontend wallet signing, Soroban RPC integration, CI/CD, and local verification scripts.
 
 ## Live Links
 
-### GitHub Repository
+GitHub repository:
 
 https://github.com/zakin1B/cinema-seat-booking
 
-### Live Demo
+Live demo:
 
 https://cinema-seat-booking-six.vercel.app
-
-## Stellar Testnet Deployment
-
-### Contract ID
-
-```text
-CAPAJLC2WT435RDYVHB5M6UTM3YTOS3ZZ3RXDM4H7QW5TZ363UEZ5KN7
-```
-
-Contract explorer:
-
-```text
-https://stellar.expert/explorer/testnet/contract/CAPAJLC2WT435RDYVHB5M6UTM3YTOS3ZZ3RXDM4H7QW5TZ363UEZ5KN7
-```
-
-### Successful Contract Interaction
-
-Transaction hash:
-
-```text
-d82889e5d8677e4c15742829fb115988a8fbfa31c0049de85e46db26e12ff8b6
-```
-
-Transaction explorer:
-
-```text
-https://stellar.expert/explorer/testnet/tx/d82889e5d8677e4c15742829fb115988a8fbfa31c0049de85e46db26e12ff8b6
-```
 
 ## Problem
 
 Cinema seat booking systems usually depend on centralized databases.
 
-This can make it difficult to independently verify whether a seat has been booked, cancelled, checked in, or double-booked.
+This can make it difficult to independently verify:
+
+- whether a seat has been booked
+- whether a booking has been cancelled
+- whether a passenger has checked in
+- whether a seat is double-booked
+- which wallet owns a booking
 
 ## Solution
 
@@ -58,208 +36,249 @@ A user can connect a Freighter wallet, book a seat, check seat ownership, cancel
 
 Stellar is useful for this project because it supports fast settlement, low transaction cost, transparent transaction history, Soroban smart contracts, and wallet signing through Freighter.
 
-## Smart Contract Architecture
+## Stellar Testnet Deployment
 
-Contract location:
+Network:
 
-```text
-contracts/cinema_booking/src/lib.rs
-```
+Stellar Testnet
 
-The contract includes:
+Contract ID:
 
-- custom booking struct
-- booking status enum
-- persistent storage keys
-- custom error enum
-- initialization flow
-- write functions
-- read functions
-- contract events
-- contract tests
+CAPAJLC2WT435RDYVHB5M6UTM3YTOS3ZZ3RXDM4H7QW5TZ363UEZ5KN7
 
-## Contract Functions
+Contract explorer:
 
-Write functions:
+https://stellar.expert/explorer/testnet/contract/CAPAJLC2WT435RDYVHB5M6UTM3YTOS3ZZ3RXDM4H7QW5TZ363UEZ5KN7
 
-```text
-initialize
-book_seat
-cancel_booking
-check_in
-```
+## Successful Contract Interaction
 
-Read functions:
+Transaction hash:
 
-```text
-admin
-is_booked
-seat_booking_id
-get_seat_owner
-get_booking
-get_total_booked
-get_user_bookings
-stats
-```
+d82889e5d8677e4c15742829fb115988a8fbfa31c0049de85e46db26e12ff8b6
 
-## Frontend Features
+Transaction explorer:
 
-The frontend is built with React, Vite, TypeScript, Freighter API, and Stellar SDK.
+https://stellar.expert/explorer/testnet/tx/d82889e5d8677e4c15742829fb115988a8fbfa31c0049de85e46db26e12ff8b6
 
-It includes:
+## Features
 
-- Freighter wallet connection
+- Freighter wallet connect
+- Freighter wallet disconnect
+- connected wallet address display
 - seat booking form
 - cancel booking action
 - check-in action
 - seat status checker
 - booking details reader
-- contract deployment links
-- transaction monitor
+- contract stats
+- transaction signing
+- transaction hash display
 - loading states
-- error states
+- handled error states
+- activity feed
 - responsive dashboard layout
+- CI/CD workflow
+- local verification script
+- deployment automation
 
-## Frontend Contract Integration
+## Smart Contract
 
-Frontend service location:
+Contract location:
 
-```text
-frontend/src/services/contract.ts
-```
+contracts/cinema_booking
+
+The contract includes these public functions:
+
+- initialize
+- book_seat
+- cancel_booking
+- check_in
+- is_booked
+- seat_booking_id
+- get_seat_owner
+- get_booking
+- get_total_booked
+- get_user_bookings
+- stats
+
+The contract uses:
+
+- custom booking struct
+- booking status enum
+- persistent storage keys
+- custom error enum
+- contract events
+- authorization checks
+- contract tests
+
+## Frontend
+
+Frontend location:
+
+frontend
+
+Important files:
+
+- frontend/src/App.tsx
+- frontend/src/App.css
+- frontend/src/contractConfig.ts
+- frontend/src/services/wallet.ts
+- frontend/src/services/contract.ts
+- frontend/src/services/contract.test.ts
 
 The frontend contract service uses:
 
-```text
-Soroban RPC
-TransactionBuilder
-Contract.call
-prepareTransaction
-Freighter signTransaction
-sendTransaction
-nativeToScVal
-scValToNative
-```
+- Soroban RPC
+- TransactionBuilder
+- Contract.call
+- prepareTransaction
+- Freighter signTransaction
+- sendTransaction
+- nativeToScVal
+- scValToNative
 
 Frontend functions map to contract functions:
 
-```text
-bookSeat       -> book_seat
-cancelBooking  -> cancel_booking
-checkIn        -> check_in
-isBooked       -> is_booked
-getSeatOwner   -> get_seat_owner
-getBooking     -> get_booking
-getStats       -> stats
-```
+- bookSeat -> book_seat
+- cancelBooking -> cancel_booking
+- checkIn -> check_in
+- isBooked -> is_booked
+- getSeatOwner -> get_seat_owner
+- getBooking -> get_booking
+- getStats -> stats
 
 ## Repository Structure
 
-```text
+<pre>
 cinema-seat-booking
-├── contracts
-│   └── cinema_booking
-│       ├── Cargo.toml
-│       └── src
-│           ├── lib.rs
-│           └── test.rs
-├── frontend
-│   ├── index.html
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── tsconfig.json
-│   ├── vite.config.ts
-│   └── src
-│       ├── App.css
-│       ├── App.tsx
-│       ├── contractConfig.ts
-│       ├── main.tsx
-│       ├── vite-env.d.ts
-│       └── services
-│           ├── contract.test.ts
-│           ├── contract.ts
-│           └── wallet.ts
-├── scripts
-│   ├── deploy-and-save.ps1
-│   └── verify-level3.ps1
-├── .github
-│   └── workflows
-│       └── ci.yml
-├── CONTRACT_ID.txt
-├── SUCCESSFUL_TX.txt
-├── DEPLOYMENT.md
-├── Cargo.toml
-├── Cargo.lock
-├── README.md
-└── .gitignore
-```
+|-- contracts
+|   `-- cinema_booking
+|       |-- Cargo.toml
+|       `-- src
+|           |-- lib.rs
+|           `-- test.rs
+|-- frontend
+|   |-- index.html
+|   |-- package.json
+|   |-- package-lock.json
+|   |-- tsconfig.json
+|   |-- vite.config.ts
+|   `-- src
+|       |-- App.css
+|       |-- App.tsx
+|       |-- contractConfig.ts
+|       |-- main.tsx
+|       |-- vite-env.d.ts
+|       `-- services
+|           |-- contract.test.ts
+|           |-- contract.ts
+|           `-- wallet.ts
+|-- scripts
+|   |-- deploy-and-save.ps1
+|   `-- verify-level3.ps1
+|-- .github
+|   `-- workflows
+|       `-- ci.yml
+|-- docs
+|   |-- ARCHITECTURE.md
+|   `-- QUALITY_AND_DEPLOYMENT.md
+|-- CONTRACT_ID.txt
+|-- SUCCESSFUL_TX.txt
+|-- DEPLOYMENT.md
+|-- vercel.json
+|-- Cargo.toml
+|-- Cargo.lock
+|-- README.md
+`-- .gitignore
+</pre>
 
 ## Local Setup
 
-```powershell
+Clone the repository:
+
+<pre>
 git clone https://github.com/zakin1B/cinema-seat-booking.git
+
 cd cinema-seat-booking
+</pre>
+
+Install frontend dependencies:
+
+<pre>
 cd frontend
+
 npm install
+</pre>
+
+Run frontend locally:
+
+<pre>
 npm run dev
-```
+</pre>
 
 ## Contract Commands
 
-```powershell
+From the repository root:
+
+<pre>
 cargo fmt --all
+
 cargo test --workspace
-stellar contract build
-```
+
+cargo build --workspace --target wasm32v1-none --release
+</pre>
 
 ## Frontend Commands
 
-```powershell
-cd frontend
+From the frontend folder:
+
+<pre>
+npm run type-check
+
 npm test
+
 npm run build
-```
+</pre>
 
-## Full Level 3 Verification
+## Full Local Verification
 
-Run from the repository root:
+From the repository root:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\verify-level3.ps1
-```
+<pre>
+powershell -ExecutionPolicy Bypass -File scripts/verify-level3.ps1
+</pre>
 
 ## Deployment
 
-Run from the repository root:
+From the repository root:
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\deploy-and-save.ps1
-```
+<pre>
+powershell -ExecutionPolicy Bypass -File scripts/deploy-and-save.ps1
+</pre>
 
 Deployment evidence is stored in:
 
-```text
-DEPLOYMENT.md
-CONTRACT_ID.txt
-SUCCESSFUL_TX.txt
-frontend/src/contractConfig.ts
-```
+- CONTRACT_ID.txt
+- SUCCESSFUL_TX.txt
+- DEPLOYMENT.md
+- frontend/src/contractConfig.ts
 
-## Testing
-
-The contract tests validate initialization, seat booking, duplicate booking rejection, owner tracking, user booking index, cancellation, check-in flow, and booking stats.
-
-The frontend tests validate Stellar Testnet configuration, deployed contract ID, contract function mapping, and integration exports.
-
-## CI Workflow
+## CI/CD
 
 GitHub Actions workflow:
 
-```text
 .github/workflows/ci.yml
-```
 
-The CI pipeline runs Rust formatting, contract tests, WASM build, frontend dependency install, frontend type-check, frontend tests, and frontend build.
+The CI pipeline runs:
+
+- Rust formatting
+- contract tests
+- contract WASM build
+- frontend dependency install
+- frontend type-check
+- frontend tests
+- frontend production build
+- project structure checks
 
 ## Current Status
 
@@ -267,18 +286,19 @@ Completed:
 
 - Soroban smart contract
 - contract tests
-- frontend contract integration
 - Freighter wallet service
-- responsive frontend dashboard
+- frontend contract integration
+- responsive dashboard
 - frontend tests
 - deployment automation
+- deployment evidence
 - verification automation
-- GitHub Actions CI
+- GitHub Actions CI configuration
+- Vercel deployment configuration
 - live Vercel deployment
-- Stellar Testnet deployment evidence
 
 ## Notes
 
-This repository does not include private keys, secret phrases, local build outputs, dependency folders, or local deploy logs.
+This repository does not include private keys, secret phrases, dependency folders, local build outputs, or local deploy logs.
 
 Generated folders and local logs are ignored by git.
